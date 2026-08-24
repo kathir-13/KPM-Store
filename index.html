@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>K.P.M Store — Rental Manager</title>
+<style>
+  :root{
+    --bg:#EEF1F3;
+    --surface:#FFFFFF;
+    --surface-2:#F6F8F9;
+    --ink:#1F2A33;
+    --ink-soft:#4C5A63;
+    --muted:#7C8A92;
+    --line:#DDE3E6;
+    --steel:#3F5A68;
+    --steel-dark:#2C4048;
+    --brass:#B8873B;
+    --brass-dark:#96692B;
+    --brass-light:#EFDDB8;
+    --success:#2F9E58;
+    --success-bg:#E4F5EA;
+    --warning:#C97A0D;
+    --warning-bg:#FBEEDA;
+    --danger:#C7433F;
+    --danger-bg:#FBE7E6;
+    --radius:14px;
+    --radius-sm:9px;
+    --shadow:0 1px 2px rgba(31,42,51,0.06), 0 4px 14px rgba(31,42,51,0.06);
+    --nav-h:64px;
+    --topbar-h:56px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    padding-bottom:calc(var(--nav-h) + 14px);
+  }
+  h1,h2,h3,h4{margin:0 0 4px 0; font-weight:700; letter-spacing:-0.01em;}
+  p{margin:0;}
+  button{font-family:inherit;}
+  input,select,textarea{font-family:inherit;}
+  .num{font-variant-numeric:tabular-nums;}
+
+  /* ---------- Top bar ---------- */
+  #topbar{
+    position:sticky; top:0; z-index:40;
+    height:var(--topbar-h);
+    background:var(--steel-dark);
+    color:#fff;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 14px;
+  }
+  #topbar .brand{display:flex; align-items:center; gap:9px;}
+  #topbar .brand .mark{
+    width:30px;height:30px;border-radius:8px;
+    background:var(--brass);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800; font-size:14px; color:#2C1E08;
+    flex-shrink:0;
+  }
+  #topbar .brand .title{font-weight:700; font-size:16px; letter-spacing:0.01em;}
+  #topbar .back-btn{
+    background:rgba(255,255,255,0.12); border:none; color:#fff;
+    width:34px;height:34px;border-radius:9px; font-size:18px;
+    display:flex;align-items:center;justify-content:center; cursor:pointer;
+  }
+  #topbar .screen-title{font-weight:700; font-size:16px;}
+  #topbar .spacer{width:34px;}
+
+  /* ---------- Bottom nav ---------- */
+  #bottomnav{
+    position:fixed; bottom:0; left:0; right:0; z-index:40;
+    height:var(--nav-h);
+    background:#fff;
+    border-top:1px solid var(--line);
+    display:flex;
+    box-shadow:0 -2px 10px rgba(31,42,51,0.06);
+  }
+  #bottomnav button{
+    flex:1; border:none; background:none; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:2px; color:var(--muted); font-size:11px; font-weight:600;
+    padding:6px 2px;
+  }
+  #bottomnav button .ic{font-size:19px; line-height:1;}
+  #bottomnav button.active{color:var(--brass-dark);}
+  #bottomnav button.active .ic{transform:translateY(-1px);}
+
+  /* ---------- Layout ---------- */
+  #app{max-width:640px; margin:0 auto; padding:14px;}
+  .screen{display:none;}
+  .screen.active{display:block; animation:fadein .15s ease;}
+  @keyframes fadein{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;}}
+
+  .card{
+    background:var(--surface);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:14px;
+    margin-bottom:12px;
+  }
+  .section-label{
+    font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em;
+    color:var(--muted); margin:18px 2px 8px;
+  }
+  .section-label:first-child{margin-top:2px;}
+
+  /* dashboard tiles */
+  .tile-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .tile{
+    background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:16px 12px; text-align:left; border:none; cursor:pointer;
+    display:flex; flex-direction:column; gap:8px; min-height:92px;
+  }
+  .tile .ic{font-size:24px;}
+  .tile .lbl{font-weight:700; font-size:14px; color:var(--ink);}
+  .tile.primary{background:linear-gradient(135deg, var(--brass) 0%, var(--brass-dark) 100%); color:#fff;}
+  .tile.primary .lbl{color:#fff;}
+
+  .stat-row{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:4px;}
+  .stat{background:var(--surface); border-radius:var(--radius-sm); padding:12px; box-shadow:var(--shadow);}
+  .stat .n{font-size:22px; font-weight:800;}
+  .stat .l{font-size:11.5px; color:var(--muted); font-weight:600; margin-top:2px;}
+  .stat.warn .n{color:var(--warning);}
+  .stat.danger .n{color:var(--danger);}
+
+  .alert{
+    border-radius:var(--radius-sm); padding:11px 13px; font-size:13.5px; font-weight:600;
+    margin-bottom:12px; display:flex; align-items:center; gap:8px;
+  }
+  .alert.danger{background:var(--danger-bg); color:var(--danger);}
+  .alert.warn{background:var(--warning-bg); color:var(--warning);}
+  .alert.info{background:var(--surface-2); color:var(--ink-soft);}
+
+  /* buttons */
+  .btn{
+    border:none; border-radius:11px; padding:13px 18px; font-weight:700; font-size:14.5px;
+    cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  }
+  .btn-block{width:100%;}
+  .btn-brass{background:var(--brass); color:#fff;}
+  .btn-brass:active{background:var(--brass-dark);}
+  .btn-steel{background:var(--steel); color:#fff;}
+  .btn-outline{background:#fff; color:var(--ink); border:1.5px solid var(--line);}
+  .btn-success{background:var(--success); color:#fff;}
+  .btn-danger-outline{background:#fff; color:var(--danger); border:1.5px solid var(--danger);}
+  .btn-sm{padding:8px 12px; font-size:13px; border-radius:9px;}
+  .btn:disabled{opacity:0.45; cursor:not-allowed;}
+
+  /* forms */
+  .field{margin-bottom:12px;}
+  .field label{display:block; font-size:12.5px; font-weight:700; color:var(--ink-soft); margin-bottom:5px;}
+  .field input[type=text], .field input[type=tel], .field input[type=number],
+  .field input[type=date], .field input[type=datetime-local], .field textarea, .field select{
+    width:100%; border:1.5px solid var(--line); border-radius:10px; padding:11px 12px;
+    font-size:15px; background:#fff; color:var(--ink);
+  }
+  .field textarea{resize:vertical; min-height:60px;}
+  .field input:focus, .field textarea:focus, .field select:focus{outline:2px solid var(--brass); outline-offset:1px; border-color:var(--brass);}
+  .field .hint{font-size:11.5px; color:var(--muted); margin-top:4px;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+
+  /* item cards */
+  .item-card{
+    display:flex; gap:11px; background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:11px; margin-bottom:10px; align-items:center;
+  }
+  .item-thumb{
+    width:58px; height:58px; border-radius:10px; background:var(--surface-2); flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:22px; overflow:hidden; color:var(--muted);
+  }
+  .item-thumb img{width:100%; height:100%; object-fit:cover;}
+  .item-info{flex:1; min-width:0;}
+  .item-info .nm{font-weight:700; font-size:14.5px;}
+  .item-info .sub{font-size:12px; color:var(--muted); margin-top:2px;}
+  .item-info .stockline{display:flex; gap:9px; margin-top:5px; font-size:11.5px; font-weight:700;}
+  .item-info .stockline span{padding:2px 7px; border-radius:6px;}
+  .stockline .tot{background:var(--surface-2); color:var(--ink-soft);}
+  .stockline .avail{background:var(--success-bg); color:var(--success);}
+  .stockline .rented{background:var(--warning-bg); color:var(--warning);}
+  .stockline .zero{background:var(--danger-bg); color:var(--danger);}
+
+  /* stepper */
+  .stepper{display:flex; align-items:center; gap:8px;}
+  .stepper button{
+    width:34px; height:34px; border-radius:9px; border:1.5px solid var(--line); background:#fff;
+    font-size:18px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    color:var(--steel);
+  }
+  .stepper button:active{background:var(--surface-2);}
+  .stepper button:disabled{opacity:0.35;}
+  .stepper .qty{min-width:26px; text-align:center; font-weight:800; font-size:15px;}
+
+  /* pick item card (new rental) */
+  .pick-card{
+    display:flex; gap:11px; background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:11px; margin-bottom:10px; align-items:center;
+  }
+  .pick-card.selected{outline:2px solid var(--brass);}
+  .pick-card .price{font-size:12px; color:var(--muted); margin-top:2px;}
+  .pick-card .avail-tag{font-size:11px; font-weight:700; color:var(--success); margin-top:2px;}
+  .pick-card .avail-tag.low{color:var(--danger);}
+
+  /* badges */
+  .badge{display:inline-block; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700;}
+  .badge.pending{background:var(--warning-bg); color:var(--warning);}
+  .badge.overdue{background:var(--danger-bg); color:var(--danger);}
+  .badge.paid{background:var(--success-bg); color:var(--success);}
+  .badge.done{background:var(--surface-2); color:var(--ink-soft);}
+
+  /* rental card */
+  .rental-card{background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); padding:13px; margin-bottom:10px; cursor:pointer;}
+  .rental-card .top-row{display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
+  .rental-card .cust{font-weight:800; font-size:15px;}
+  .rental-card .phone{font-size:12px; color:var(--muted); margin-top:1px;}
+  .rental-card .meta{font-size:12px; color:var(--ink-soft); margin-top:7px; line-height:1.5;}
+  .rental-card .items-line{font-size:12.5px; color:var(--ink-soft); margin-top:6px;}
+  .rental-card .bottom-row{display:flex; justify-content:space-between; align-items:center; margin-top:9px;}
+  .rental-card .amt{font-weight:800; font-size:15px;}
+
+  .empty-state{text-align:center; padding:40px 16px; color:var(--muted);}
+  .empty-state .ic{font-size:34px; margin-bottom:8px;}
+  .empty-state .t{font-weight:700; color:var(--ink-soft); margin-bottom:4px;}
+  .empty-state .d{font-size:13px;}
+
+  .search-box{position:relative; margin-bottom:14px;}
+  .search-box input{width:100%; border:1.5px solid var(--line); border-radius:11px; padding:11px 12px 11px 36px; font-size:14.5px;}
+  .search-box .ic{position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--muted);}
+
+  .divider{height:1px; background:var(--line); margin:12px 0;}
+
+  .line-item-row{display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--line);}
+  .line-item-row:last-child{border-bottom:none;}
+  .line-item-row .nm{font-weight:700; font-size:14px;}
+  .line-item-row .sub{font-size:11.5px; color:var(--muted);}
+
+  .total-box{background:var(--steel-dark); color:#fff; border-radius:var(--radius); padding:16px; margin:14px 0;}
+  .total-box .lbl{font-size:12px; opacity:0.8; font-weight:600;}
+  .total-box .val{font-size:26px; font-weight:800; margin-top:2px;}
+  .total-box .sub{font-size:12px; opacity:0.75; margin-top:4px;}
+
+  /* modal */
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(31,42,51,0.45); z-index:100;
+    display:flex; align-items:flex-end; justify-content:center;
+  }
+  .modal-backdrop.center{align-items:center; padding:16px;}
+  .modal-sheet{
+    background:#fff; width:100%; max-width:640px; border-radius:18px 18px 0 0;
+    padding:18px 16px calc(18px + env(safe-area-inset-bottom, 0px)); max-height:88vh; overflow-y:auto;
+  }
+  .modal-backdrop.center .modal-sheet{border-radius:16px; max-height:82vh;}
+  .modal-header{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;}
+  .modal-header h3{font-size:17px;}
+  .modal-close{background:var(--surface-2); border:none; width:30px;height:30px;border-radius:8px; font-size:16px; cursor:pointer; color:var(--ink-soft);}
+
+  .photo-upload{
+    width:100%; height:130px; border-radius:12px; border:1.5px dashed var(--line); background:var(--surface-2);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; cursor:pointer; color:var(--muted);
+    margin-bottom:12px; overflow:hidden; position:relative;
+  }
+  .photo-upload img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;}
+  .photo-upload .lbl{font-size:12.5px; font-weight:700;}
+
+  .toast{
+    position:fixed; bottom:calc(var(--nav-h) + 14px); left:50%; transform:translateX(-50%);
+    background:var(--steel-dark); color:#fff; padding:11px 18px; border-radius:24px; font-size:13.5px; font-weight:600;
+    box-shadow:var(--shadow); z-index:200; opacity:0; pointer-events:none; transition:opacity .2s, transform .2s;
+    white-space:nowrap; max-width:90vw; overflow:hidden; text-overflow:ellipsis;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(-6px);}
+
+  .qty-adjust-row{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line);}
+  .qty-adjust-row:last-child{border-bottom:none;}
+  .qty-adjust-row .nm{font-weight:700; font-size:13.5px;}
+  .qty-adjust-row .sub{font-size:11px; color:var(--muted); margin-top:2px;}
+  .mini-input{width:56px; border:1.5px solid var(--line); border-radius:8px; padding:7px; text-align:center; font-weight:700; font-size:14px;}
+
+  .report-row{display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--line); font-size:13.5px;}
+  .report-row:last-child{border-bottom:none;}
+  .report-row .l{color:var(--ink-soft);}
+  .report-row .v{font-weight:800;}
+
+  .qr-preview{width:100%; max-width:260px; margin:0 auto 12px; display:block; border-radius:12px; border:1.5px solid var(--line);}
+
+  a.link-btn{color:var(--brass-dark); font-weight:700; font-size:13px; text-decoration:none;}
+
+  ::-webkit-scrollbar{width:0; height:0;}
+
+  @media (min-width:520px){
+    .tile-grid{grid-template-columns:repeat(3,1fr);}
+  }
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <button class="back-btn" id="backBtn" style="visibility:hidden;" onclick="goBack()">‹</button>
+  <div class="screen-title" id="screenTitle">K.P.M Store</div>
+  <div class="spacer" id="topRightSpacer"></div>
+</div>
+
+<div id="app">
+
+  <!-- DASHBOARD -->
+  <div class="screen" id="screen-dashboard">
+    <div id="dashAlerts"></div>
+    <div class="stat-row" id="dashStats"></div>
+    <div class="section-label">Quick Actions</div>
+    <div class="tile-grid">
+      <button class="tile primary" onclick="nav('new-rental')"><span class="ic">➕</span><span class="lbl">New Rental</span></button>
+      <button class="tile" onclick="nav('active')"><span class="ic">📦</span><span class="lbl">Active Rentals</span></button>
+      <button class="tile" onclick="nav('active')"><span class="ic">↩️</span><span class="lbl">Return Items</span></button>
+      <button class="tile" onclick="nav('items')"><span class="ic">🍽️</span><span class="lbl">Manage Items</span></button>
+      <button class="tile" onclick="nav('reports')"><span class="ic">📊</span><span class="lbl">Reports</span></button>
+      <button class="tile" onclick="nav('settings')"><span class="ic">⚙️</span><span class="lbl">Settings & Backup</span></button>
+    </div>
+  </div>
+
+  <!-- ITEMS -->
+  <div class="screen" id="screen-items">
+    <button class="btn btn-brass btn-block" onclick="openItemForm()">➕ Add New Item</button>
+    <div class="section-label">All Items</div>
+    <div id="itemsList"></div>
+  </div>
+
+  <!-- NEW RENTAL -->
+  <div class="screen" id="screen-new-rental">
+    <div class="section-label">Step 1 — Select Items</div>
+    <div id="pickItemsList"></div>
+    <div class="section-label">Step 2 — Customer Details</div>
+    <div class="card">
+      <div class="field">
+        <label>Customer Name *</label>
+        <input type="text" id="nrName" placeholder="e.g. Murugan">
+      </div>
+      <div class="field">
+        <label>Mobile Number *</label>
+        <input type="tel" id="nrMobile" placeholder="10-digit mobile">
+      </div>
+      <div class="field">
+        <label>Address / Area</label>
+        <input type="text" id="nrAddress" placeholder="Optional">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Rental Date & Time *</label>
+          <input type="datetime-local" id="nrRentalDate">
+        </div>
+        <div class="field">
+          <label>Expected Return *</label>
+          <input type="datetime-local" id="nrReturnDate">
+        </div>
+      </div>
+      <div class="field">
+        <label>Notes</label>
+        <textarea id="nrNotes" placeholder="Optional notes"></textarea>
+      </div>
+    </div>
+    <div class="total-box" id="nrTotalBox">
+      <div class="lbl">ESTIMATED AMOUNT</div>
+      <div class="val num">₹0</div>
+      <div class="sub">Select items to see estimate</div>
+    </div>
+    <button class="btn btn-brass btn-block" onclick="submitNewRental()">Confirm & Give Items</button>
+  </div>
+
+  <!-- ACTIVE RENTALS -->
+  <div class="screen" id="screen-active">
+    <div class="search-box">
+      <span class="ic">🔎</span>
+      <input type="text" id="activeSearch" placeholder="Search by name or phone" oninput="renderActive()">
+    </div>
+    <div id="activeList"></div>
+  </div>
+
+  <!-- RETURN DETAIL -->
+  <div class="screen" id="screen-return">
+    <div id="returnDetail"></div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="screen" id="screen-history">
+    <div class="search-box">
+      <span class="ic">🔎</span>
+      <input type="text" id="historySearch" placeholder="Search name, phone, bill no." oninput="renderHistory()">
+    </div>
+    <div id="historyList"></div>
+  </div>
+
+  <!-- HISTORY DETAIL -->
+  <div class="screen" id="screen-history-detail">
+    <div id="historyDetail"></div>
+  </div>
+
+  <!-- REPORTS -->
+  <div class="screen" id="screen-reports">
+    <div id="reportsContent"></div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="screen" id="screen-settings">
+    <div class="section-label">Payment QR Code</div>
+    <div class="card">
+      <img id="qrPreviewImg" class="qr-preview" style="display:none;">
+      <input type="file" accept="image/*" id="qrFileInput" style="display:none" onchange="handleQrUpload(event)">
+      <button class="btn btn-outline btn-block" onclick="document.getElementById('qrFileInput').click()">📷 Upload / Change QR Image</button>
+    </div>
+
+    <div class="section-label">Backup & Restore</div>
+    <div class="card">
+      <p style="font-size:13px; color:var(--ink-soft); line-height:1.6; margin-bottom:12px;">
+        All data is stored only on this device's browser. If the browser cache is cleared, the phone is lost/changed, or the app is opened on a different device, this data will <b>not</b> be there. Download a backup regularly and keep it safe (e.g. WhatsApp it to yourself, or save to Google Drive).
+      </p>
+      <button class="btn btn-steel btn-block" style="margin-bottom:10px;" onclick="downloadBackup()">⬇️ Download Backup (JSON)</button>
+      <input type="file" accept="application/json" id="restoreFileInput" style="display:none" onchange="handleRestoreUpload(event)">
+      <button class="btn btn-outline btn-block" onclick="document.getElementById('restoreFileInput').click()">⬆️ Restore from Backup</button>
+    </div>
+
+    <div class="section-label">Export Reports (CSV)</div>
+    <div class="card">
+      <button class="btn btn-outline btn-block" style="margin-bottom:10px;" onclick="exportHistoryCsv()">📄 Rental History CSV</button>
+      <button class="btn btn-outline btn-block" onclick="exportItemsCsv()">📄 Item-wise Report CSV</button>
+    </div>
+
+    <div class="section-label">Danger Zone</div>
+    <div class="card">
+      <button class="btn btn-danger-outline btn-block" onclick="confirmClearData()">🗑️ Erase All Data</button>
+    </div>
+  </div>
+
+</div>
+
+<div id="bottomnav">
+  <button data-s="dashboard" onclick="nav('dashboard')"><span class="ic">🏠</span>Home</button>
+  <button data-s="active" onclick="nav('active')"><span class="ic">📦</span>Rentals</button>
+  <button data-s="new-rental" onclick="nav('new-rental')"><span class="ic">➕</span>New</button>
+  <button data-s="items" onclick="nav('items')"><span class="ic">🍽️</span>Items</button>
+  <button data-s="reports" onclick="nav('reports')"><span class="ic">📊</span>Reports</button>
+</div>
+
+<div id="toast" class="toast"></div>
+<div id="modalRoot"></div>
+
+<script>
+/* =========================================================
+   K.P.M STORE — RENTAL MANAGEMENT APP
+   Single-file, local-storage only, no backend.
+========================================================= */
+
+const STORAGE_KEY = 'kpm_store_data_v1';
+const SCREENS = ['dashboard','items','new-rental','active','return','history','history-detail','reports','settings'];
+const NAV_SCREENS = ['dashboard','active','new-rental','items','reports'];
+const TITLES = {
+  dashboard:'K.P.M Store', items:'Manage Items', 'new-rental':'New Rental',
+  active:'Active Rentals', 'return':'Return Items', history:'Rental History',
+  'history-detail':'Rental Details', reports:'Reports', settings:'Settings & Backup'
+};
+
+let DB = null;
+let navStack = ['dashboard'];
+let currentReturnRentalId = null;
+let currentHistoryId = null;
+let newRentalSelections = {}; // itemId -> qty
+let pendingItemPhoto = null; // dataURL for item form
+let editingItemId = null;
+
+/* ---------------- Persistence ---------------- */
+function defaultData(){
+  return {
+    items: [
+      mkItem('Plastic Chair', 100, 5),
+      mkItem('Table', 20, 25),
+      mkItem('Bucket', 40, 5),
+      mkItem('Spoon / Karandi', 60, 2),
+      mkItem('10 Padi Degsa', 15, 40),
+      mkItem('20 Padi Degsa', 10, 60),
+      mkItem('30 Padi Degsa', 8, 80),
+      mkItem('50 Padi Degsa', 5, 120),
+      mkItem('Basin', 30, 10),
+      mkItem('Anna Thattu', 100, 3),
+      mkItem('Anna Koodai', 20, 15),
+      mkItem('Thanni Satti', 15, 20),
+      mkItem('Iron Appa', 10, 15),
+      mkItem('Aluminium Appa', 10, 12),
+      mkItem('Paal Cup', 100, 2),
+      mkItem('Parotta Stove', 5, 100),
+      mkItem('Iron Stove', 8, 90),
+      mkItem('Gas Stove', 6, 150),
+      mkItem('Single Stove', 10, 60),
+      mkItem('Double Stove', 6, 90),
+      mkItem('Drum', 10, 50)
+    ],
+    rentals: [],
+    settings: { qrImage: null },
+    billCounter: 1000
+  };
+}
+function mkItem(name, qty, price){
+  return { id: uid(), name, photo:null, totalQty:qty, lostQty:0, pricePerDay:price };
+}
+function uid(){ return 'id' + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+
+function loadDB(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){ DB = JSON.parse(raw); }
+    else { DB = defaultData(); saveDB(); }
+    if(!DB.settings) DB.settings = {qrImage:null};
+    if(!DB.billCounter) DB.billCounter = 1000;
+  }catch(e){
+    console.error('Load failed', e);
+    DB = defaultData();
+  }
+}
+function saveDB(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
+  }catch(e){
+    alert('Could not save data — storage might be full. Try removing large item photos or exporting/clearing old history.');
+  }
+}
+
+/* ---------------- Navigation ---------------- */
+function nav(screen, push=true){
+  SCREENS.forEach(s=>{
+    const el = document.getElementById('screen-'+s);
+    if(el) el.classList.toggle('active', s===screen);
+  });
+  document.getElementById('screenTitle').textContent = TITLES[screen] || 'K.P.M Store';
+  document.querySelectorAll('#bottomnav button').forEach(b=>{
+    b.classList.toggle('active', b.dataset.s===screen);
+  });
+  document.getElementById('bottomnav').style.display = NAV_SCREENS.includes(screen) ? 'flex' : 'flex';
+  const backBtn = document.getElementById('backBtn');
+  backBtn.style.visibility = NAV_SCREENS.includes(screen) ? 'hidden' : 'visible';
+
+  if(push){
+    if(navStack[navStack.length-1] !== screen) navStack.push(screen);
+  }
+  renderScreen(screen);
+  window.scrollTo(0,0);
+}
+function goBack(){
+  if(navStack.length>1){
+    navStack.pop();
+    const prev = navStack[navStack.length-1];
+    nav(prev, false);
+  } else {
+    nav('dashboard', false);
+  }
+}
+function renderScreen(screen){
+  if(screen==='dashboard') renderDashboard();
+  else if(screen==='items') renderItems();
+  else if(screen==='new-rental') renderNewRentalScreen();
+  else if(screen==='active') renderActive();
+  else if(screen==='return') renderReturnDetail();
+  else if(screen==='history') renderHistory();
+  else if(screen==='history-detail') renderHistoryDetail();
+  else if(screen==='reports') renderReports();
+  else if(screen==='settings') renderSettings();
+}
+
+/* ---------------- Utils ---------------- */
+function money(n){
+  n = Math.round(n||0);
+  return '₹' + n.toLocaleString('en-IN');
+}
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._h);
+  t._h = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+function fmtDate(iso){
+  if(!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
+}
+function fmtDateTime(iso){
+  if(!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-IN', {day:'2-digit', month:'short'}) + ', ' + d.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+}
+function nowLocalInputValue(offsetDays=0){
+  const d = new Date(Date.now() + offsetDays*86400000);
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0,16);
+}
+function daysBetween(startIso, endIso){
+  const ms = new Date(endIso) - new Date(startIso);
+  if(isNaN(ms) || ms<=0) return 1;
+  return Math.max(1, Math.ceil(ms / 86400000));
+}
+function escapeHtml(s){
+  return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ---------------- Stock calculations ---------------- */
+function outstandingQtyForItem(itemId, excludeRentalId){
+  let out = 0;
+  DB.rentals.forEach(r=>{
+    if(r.status!=='active') return;
+    if(excludeRentalId && r.id===excludeRentalId) return;
+    r.lineItems.forEach(li=>{
+      if(li.itemId===itemId){
+        const resolved = (li.returnedQty||0)+(li.damagedQty||0)+(li.missingQty||0);
+        out += Math.max(0, li.qty - resolved);
+      }
+    });
+  });
+  return out;
+}
+function availableQty(item, excludeRentalId){
+  const rented = outstandingQtyForItem(item.id, excludeRentalId);
+  return Math.max(0, item.totalQty - item.lostQty - rented);
+}
+
+/* ---------------- Image handling ---------------- */
+function resizeImageFile(file, maxDim, cb){
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const img = new Image();
+    img.onload = function(){
+      let w = img.width, h = img.height;
+      if(w>h){ if(w>maxDim){ h = Math.round(h*maxDim/w); w = maxDim; } }
+      else { if(h>maxDim){ w = Math.round(w*maxDim/h); h = maxDim; } }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      cb(canvas.toDataURL('image/jpeg', 0.65));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+/* =========================================================
+   DASHBOARD
+========================================================= */
+function renderDashboard(){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const active = DB.rentals.filter(r=>r.status==='active');
+  const overdue = active.filter(r=> r.expectedReturnDate && new Date(r.expectedReturnDate) < new Date());
+  const pendingItemsCount = active.reduce((sum,r)=> sum + r.lineItems.reduce((s,li)=> s + Math.max(0, li.qty - (li.returnedQty||0) - (li.damagedQty||0) - (li.missingQty||0)), 0), 0);
+  const todaysRentals = DB.rentals.filter(r=>{
+    const d = new Date(r.rentalDate);
+    return d.toDateString() === new Date().toDateString();
+  });
+
+  const alerts = document.getElementById('dashAlerts');
+  alerts.innerHTML = '';
+  if(overdue.length>0){
+    const div = document.createElement('div');
+    div.className = 'alert danger';
+    div.innerHTML = `⚠️ <span><b>${overdue.length}</b> overdue rental${overdue.length>1?'s':''} — items not returned past expected date.</span>`;
+    div.onclick = ()=>nav('active');
+    div.style.cursor='pointer';
+    alerts.appendChild(div);
+  }
+
+  document.getElementById('dashStats').innerHTML = `
+    <div class="stat"><div class="n num">${todaysRentals.length}</div><div class="l">Today's Rentals</div></div>
+    <div class="stat warn"><div class="n num">${pendingItemsCount}</div><div class="l">Pending Items</div></div>
+    <div class="stat"><div class="n num">${active.length}</div><div class="l">Active Rentals</div></div>
+    <div class="stat danger"><div class="n num">${overdue.length}</div><div class="l">Overdue</div></div>
+  `;
+}
+
+/* =========================================================
+   ITEMS
+========================================================= */
+function renderItems(){
+  const list = document.getElementById('itemsList');
+  if(DB.items.length===0){
+    list.innerHTML = emptyState('🍽️','No items yet','Tap "Add New Item" to get started');
+    return;
+  }
+  list.innerHTML = DB.items.map(item=>{
+    const rented = outstandingQtyForItem(item.id);
+    const avail = availableQty(item);
+    const thumb = item.photo ? `<img src="${item.photo}">` : '🍽️';
+    return `
+      <div class="item-card">
+        <div class="item-thumb">${thumb}</div>
+        <div class="item-info">
+          <div class="nm">${escapeHtml(item.name)}</div>
+          <div class="sub">${money(item.pricePerDay)} / day</div>
+          <div class="stockline">
+            <span class="tot">Total ${item.totalQty}</span>
+            <span class="${avail<=0?'zero':'avail'}">Avail ${avail}</span>
+            ${rented>0?`<span class="rented">Rented ${rented}</span>`:''}
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <button class="btn btn-outline btn-sm" onclick="openItemForm('${item.id}')">Edit</button>
+          <button class="btn btn-danger-outline btn-sm" onclick="deleteItem('${item.id}')">Delete</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+function emptyState(ic,t,d){
+  return `<div class="empty-state"><div class="ic">${ic}</div><div class="t">${t}</div><div class="d">${d}</div></div>`;
+}
+
+function openItemForm(itemId){
+  editingItemId = itemId || null;
+  const item = itemId ? DB.items.find(i=>i.id===itemId) : null;
+  pendingItemPhoto = item ? item.photo : null;
+  const html = `
+    <div class="modal-header">
+      <h3>${item ? 'Edit Item' : 'Add New Item'}</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="photo-upload" id="itemPhotoUpload" onclick="document.getElementById('itemPhotoInput').click()">
+      ${item && item.photo ? `<img src="${item.photo}">` : `<span style="font-size:26px;">📷</span><span class="lbl">Take / Upload Photo</span>`}
+    </div>
+    <input type="file" accept="image/*" capture="environment" id="itemPhotoInput" style="display:none" onchange="handleItemPhoto(event)">
+    <div class="field">
+      <label>Item Name *</label>
+      <input type="text" id="itemNameInput" value="${item?escapeHtml(item.name):''}" placeholder="e.g. Chair">
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Total Quantity *</label>
+        <input type="number" id="itemQtyInput" min="0" value="${item?item.totalQty:''}" placeholder="e.g. 100">
+      </div>
+      <div class="field">
+        <label>Price / Day (₹) *</label>
+        <input type="number" id="itemPriceInput" min="0" value="${item?item.pricePerDay:''}" placeholder="e.g. 5">
+      </div>
+    </div>
+    <button class="btn btn-brass btn-block" onclick="saveItemForm()">Save Item</button>
+  `;
+  openModal(html);
+}
+function handleItemPhoto(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  resizeImageFile(file, 500, (dataUrl)=>{
+    pendingItemPhoto = dataUrl;
+    document.getElementById('itemPhotoUpload').innerHTML = `<img src="${dataUrl}">`;
+  });
+}
+function saveItemForm(){
+  const name = document.getElementById('itemNameInput').value.trim();
+  const qty = parseInt(document.getElementById('itemQtyInput').value);
+  const price = parseFloat(document.getElementById('itemPriceInput').value);
+  if(!name){ toast('Please enter item name'); return; }
+  if(isNaN(qty) || qty<0){ toast('Please enter valid quantity'); return; }
+  if(isNaN(price) || price<0){ toast('Please enter valid price'); return; }
+
+  if(editingItemId){
+    const item = DB.items.find(i=>i.id===editingItemId);
+    item.name = name; item.totalQty = qty; item.pricePerDay = price; item.photo = pendingItemPhoto;
+  } else {
+    DB.items.push({ id:uid(), name, photo:pendingItemPhoto, totalQty:qty, lostQty:0, pricePerDay:price });
+  }
+  saveDB();
+  closeModal();
+  renderItems();
+  toast('Item saved');
+}
+function deleteItem(itemId){
+  const rented = outstandingQtyForItem(itemId);
+  if(rented>0){ alert('Cannot delete — this item currently has units on active rental.'); return; }
+  if(!confirm('Delete this item permanently?')) return;
+  DB.items = DB.items.filter(i=>i.id!==itemId);
+  saveDB();
+  renderItems();
+  toast('Item deleted');
+}
+
+/* =========================================================
+   NEW RENTAL
+========================================================= */
+function renderNewRentalScreen(){
+  newRentalSelections = {};
+  document.getElementById('nrName').value='';
+  document.getElementById('nrMobile').value='';
+  document.getElementById('nrAddress').value='';
+  document.getElementById('nrNotes').value='';
+  document.getElementById('nrRentalDate').value = nowLocalInputValue();
+  document.getElementById('nrReturnDate').value = nowLocalInputValue(1);
+  renderPickItems();
+  updateNewRentalTotal();
+}
+function renderPickItems(){
+  const list = document.getElementById('pickItemsList');
+  if(DB.items.length===0){
+    list.innerHTML = emptyState('🍽️','No items available','Add items first from the Items screen');
+    return;
+  }
+  list.innerHTML = DB.items.map(item=>{
+    const avail = availableQty(item);
+    const qty = newRentalSelections[item.id] || 0;
+    const thumb = item.photo ? `<img src="${item.photo}">` : '🍽️';
+    return `
+      <div class="pick-card ${qty>0?'selected':''}" id="pick-${item.id}">
+        <div class="item-thumb">${thumb}</div>
+        <div class="item-info">
+          <div class="nm">${escapeHtml(item.name)}</div>
+          <div class="price">${money(item.pricePerDay)}/day</div>
+          <div class="avail-tag ${avail<=0?'low':''}">${avail<=0?'Out of stock':'Available: '+avail}</div>
+        </div>
+        <div class="stepper">
+          <button onclick="adjustPick('${item.id}',-1)" ${qty<=0?'disabled':''}>−</button>
+          <span class="qty num" id="qty-${item.id}">${qty}</span>
+          <button onclick="adjustPick('${item.id}',1)" ${avail<=qty?'disabled':''}>+</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+function adjustPick(itemId, delta){
+  const item = DB.items.find(i=>i.id===itemId);
+  const avail = availableQty(item);
+  let qty = newRentalSelections[itemId] || 0;
+  qty += delta;
+  if(qty<0) qty=0;
+  if(qty>avail) qty=avail;
+  newRentalSelections[itemId] = qty;
+  document.getElementById('qty-'+itemId).textContent = qty;
+  document.getElementById('pick-'+itemId).classList.toggle('selected', qty>0);
+  const btnMinus = document.querySelector(`#pick-${itemId} .stepper button:first-child`);
+  const btnPlus = document.querySelector(`#pick-${itemId} .stepper button:last-child`);
+  btnMinus.disabled = qty<=0;
+  btnPlus.disabled = qty>=avail;
+  updateNewRentalTotal();
+}
+function updateNewRentalTotal(){
+  const rentalDate = document.getElementById('nrRentalDate').value;
+  const returnDate = document.getElementById('nrReturnDate').value;
+  let days = 1;
+  if(rentalDate && returnDate) days = daysBetween(rentalDate, returnDate);
+  let itemCount=0, dailyTotal=0;
+  Object.keys(newRentalSelections).forEach(id=>{
+    const qty = newRentalSelections[id];
+    if(qty>0){
+      const item = DB.items.find(i=>i.id===id);
+      itemCount += qty;
+      dailyTotal += qty*item.pricePerDay;
+    }
+  });
+  const total = dailyTotal*days;
+  const box = document.getElementById('nrTotalBox');
+  if(itemCount===0){
+    box.querySelector('.val').textContent = '₹0';
+    box.querySelector('.sub').textContent = 'Select items to see estimate';
+  } else {
+    box.querySelector('.val').textContent = money(total);
+    box.querySelector('.sub').textContent = `${itemCount} item(s) × ${days} day${days>1?'s':''} (₹${dailyTotal}/day) — recalculated on actual return`;
+  }
+}
+document.addEventListener('input', function(e){
+  if(e.target.id==='nrRentalDate' || e.target.id==='nrReturnDate') updateNewRentalTotal();
+});
+
+function submitNewRental(){
+  const name = document.getElementById('nrName').value.trim();
+  const mobile = document.getElementById('nrMobile').value.trim();
+  const address = document.getElementById('nrAddress').value.trim();
+  const notes = document.getElementById('nrNotes').value.trim();
+  const rentalDate = document.getElementById('nrRentalDate').value;
+  const returnDate = document.getElementById('nrReturnDate').value;
+
+  const selectedIds = Object.keys(newRentalSelections).filter(id=>newRentalSelections[id]>0);
+  if(selectedIds.length===0){ toast('Please select at least one item'); return; }
+  if(!name){ toast('Please enter customer name'); return; }
+  if(!mobile){ toast('Please enter mobile number'); return; }
+  if(!rentalDate || !returnDate){ toast('Please set rental & return dates'); return; }
+  if(new Date(returnDate) <= new Date(rentalDate)){ toast('Return date must be after rental date'); return; }
+
+  // re-validate stock at submit time
+  for(const id of selectedIds){
+    const item = DB.items.find(i=>i.id===id);
+    const avail = availableQty(item);
+    if(newRentalSelections[id] > avail){
+      toast(`Not enough stock for ${item.name} (only ${avail} available)`);
+      return;
+    }
+  }
+
+  const daysBooked = daysBetween(rentalDate, returnDate);
+  const lineItems = selectedIds.map(id=>{
+    const item = DB.items.find(i=>i.id===id);
+    return {
+      itemId:id, itemName:item.name, pricePerDay:item.pricePerDay,
+      qty:newRentalSelections[id], returnedQty:0, damagedQty:0, missingQty:0
+    };
+  });
+
+  const rental = {
+    id: uid(),
+    billNo: DB.billCounter++,
+    customerName:name, mobile, address, notes,
+    rentalDate, expectedReturnDate:returnDate,
+    daysBooked, daysUsed:daysBooked,
+    lineItems,
+    extraCharges:0,
+    status:'active',
+    paymentStatus:'pending',
+    createdAt:new Date().toISOString(),
+    completedAt:null,
+    finalAmount:null
+  };
+  DB.rentals.push(rental);
+  saveDB();
+  toast('Rental created — items given to customer');
+  nav('active');
+}
+
+/* =========================================================
+   ACTIVE RENTALS
+========================================================= */
+function rentalPendingCount(r){
+  return r.lineItems.reduce((s,li)=> s + Math.max(0, li.qty - (li.returnedQty||0) - (li.damagedQty||0) - (li.missingQty||0)), 0);
+}
+function rentalEstimatedAmount(r){
+  const dailyTotal = r.lineItems.reduce((s,li)=> s + li.qty*li.pricePerDay, 0);
+  return dailyTotal * (r.daysUsed || r.daysBooked) + (r.extraCharges||0);
+}
+function isOverdue(r){
+  return r.status==='active' && r.expectedReturnDate && new Date(r.expectedReturnDate) < new Date() && rentalPendingCount(r)>0;
+}
+function renderActive(){
+  const q = (document.getElementById('activeSearch').value||'').toLowerCase();
+  let list = DB.rentals.filter(r=>r.status==='active');
+  if(q){
+    list = list.filter(r => r.customerName.toLowerCase().includes(q) || r.mobile.includes(q));
+  }
+  list.sort((a,b)=>{
+    const ao = isOverdue(a)?1:0, bo = isOverdue(b)?1:0;
+    if(ao!==bo) return bo-ao;
+    return rentalPendingCount(b) - rentalPendingCount(a);
+  });
+  const el = document.getElementById('activeList');
+  if(list.length===0){
+    el.innerHTML = emptyState('📦','No active rentals', q?'No results found':'New rentals will appear here');
+    return;
+  }
+  el.innerHTML = list.map(r=>{
+    const pending = rentalPendingCount(r);
+    const overdue = isOverdue(r);
+    const itemsLine = r.lineItems.map(li=>`${li.itemName} ×${li.qty}`).join(', ');
+    return `
+      <div class="rental-card" onclick="openReturn('${r.id}')">
+        <div class="top-row">
+          <div>
+            <div class="cust">${escapeHtml(r.customerName)}</div>
+            <div class="phone">${escapeHtml(r.mobile)}</div>
+          </div>
+          <div style="text-align:right;">
+            ${overdue?'<span class="badge overdue">OVERDUE</span>':''}
+            ${pending>0?`<div style="margin-top:5px;"><span class="badge pending">${pending} pending</span></div>`:'<div style="margin-top:5px;"><span class="badge paid">All returned</span></div>'}
+          </div>
+        </div>
+        <div class="items-line">${escapeHtml(itemsLine)}</div>
+        <div class="meta">Out: ${fmtDateTime(r.rentalDate)} &nbsp;•&nbsp; Due: ${fmtDateTime(r.expectedReturnDate)}</div>
+        <div class="bottom-row">
+          <span style="font-size:12px;color:var(--muted);">Bill #${r.billNo}</span>
+          <span class="amt num">${money(rentalEstimatedAmount(r))}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* =========================================================
+   RETURN FLOW
+========================================================= */
+function openReturn(rentalId){
+  currentReturnRentalId = rentalId;
+  nav('return');
+}
+function renderReturnDetail(){
+  const r = DB.rentals.find(x=>x.id===currentReturnRentalId);
+  const el = document.getElementById('returnDetail');
+  if(!r){ el.innerHTML=''; return; }
+
+  const pending = rentalPendingCount(r);
+  const overdue = isOverdue(r);
+
+  el.innerHTML = `
+    <div class="card">
+      <div class="top-row" style="display:flex; justify-content:space-between;">
+        <div>
+          <h3 style="margin-bottom:2px;">${escapeHtml(r.customerName)}</h3>
+          <div class="phone" style="color:var(--muted); font-size:12.5px;">${escapeHtml(r.mobile)} ${r.address?' • '+escapeHtml(r.address):''}</div>
+        </div>
+        ${overdue?'<span class="badge overdue">OVERDUE</span>':''}
+      </div>
+      <div class="divider"></div>
+      <div style="font-size:12.5px; color:var(--ink-soft); line-height:1.7;">
+        Bill #${r.billNo}<br>
+        Given: ${fmtDateTime(r.rentalDate)}<br>
+        Expected Return: ${fmtDateTime(r.expectedReturnDate)}<br>
+        ${r.notes?('Notes: '+escapeHtml(r.notes)):''}
+      </div>
+    </div>
+
+    <div class="section-label">Items — mark this return</div>
+    <div class="card" id="returnLineItems">
+      ${r.lineItems.map((li,idx)=>{
+        const resolved = (li.returnedQty||0)+(li.damagedQty||0)+(li.missingQty||0);
+        const linePending = Math.max(0, li.qty - resolved);
+        return `
+        <div class="qty-adjust-row">
+          <div style="flex:1;">
+            <div class="nm">${escapeHtml(li.itemName)}</div>
+            <div class="sub">Ordered ${li.qty} · Returned ${li.returnedQty||0} ${li.damagedQty?(' · Damaged '+li.damagedQty):''} ${li.missingQty?(' · Missing '+li.missingQty):''} · <b style="color:${linePending>0?'var(--warning)':'var(--success)'}">Pending ${linePending}</b></div>
+          </div>
+        </div>
+        ${linePending>0 ? `
+        <div style="display:flex; gap:8px; padding:6px 0 12px; flex-wrap:wrap;">
+          <div style="flex:1; min-width:90px;">
+            <div class="sub" style="margin-bottom:3px;">Returning OK</div>
+            <input type="number" min="0" max="${linePending}" value="0" class="mini-input" style="width:100%;" id="ret-ok-${idx}">
+          </div>
+          <div style="flex:1; min-width:90px;">
+            <div class="sub" style="margin-bottom:3px;">Damaged</div>
+            <input type="number" min="0" max="${linePending}" value="0" class="mini-input" style="width:100%;" id="ret-dmg-${idx}">
+          </div>
+          <div style="flex:1; min-width:90px;">
+            <div class="sub" style="margin-bottom:3px;">Missing</div>
+            <input type="number" min="0" max="${linePending}" value="0" class="mini-input" style="width:100%;" id="ret-miss-${idx}">
+          </div>
+        </div>` : ''}
+      `;
+      }).join('<div class="divider"></div>')}
+    </div>
+
+    <div class="section-label">Billing</div>
+    <div class="card">
+      <div class="field">
+        <label>Days Used (booked for ${r.daysBooked})</label>
+        <input type="number" min="1" value="${r.daysUsed||r.daysBooked}" id="daysUsedInput" oninput="recalcReturnTotal()">
+        <div class="hint">Adjust down if the customer used fewer days than booked — amount recalculates automatically.</div>
+      </div>
+      <div class="field">
+        <label>Extra Charge — damage/missing (₹)</label>
+        <input type="number" min="0" value="${r.extraCharges||0}" id="extraChargeInput" oninput="recalcReturnTotal()">
+      </div>
+    </div>
+
+    <div class="total-box" id="returnTotalBox">
+      <div class="lbl">AMOUNT TO COLLECT</div>
+      <div class="val num">${money(rentalEstimatedAmount(r))}</div>
+      <div class="sub">${pending>0?`${pending} item(s) still pending`:'All items resolved — ready to close'}</div>
+    </div>
+
+    ${DB.settings.qrImage ? `<button class="btn btn-outline btn-block" style="margin-bottom:10px;" onclick="showPayQr()">📱 Show Payment QR</button>` : ''}
+
+    <button class="btn btn-brass btn-block" onclick="saveReturnProgress()">💾 Save This Return</button>
+  `;
+}
+function recalcReturnTotal(){
+  const r = DB.rentals.find(x=>x.id===currentReturnRentalId);
+  const days = parseFloat(document.getElementById('daysUsedInput').value) || r.daysBooked;
+  const extra = parseFloat(document.getElementById('extraChargeInput').value) || 0;
+  const dailyTotal = r.lineItems.reduce((s,li)=> s + li.qty*li.pricePerDay, 0);
+  const total = dailyTotal*days + extra;
+  document.querySelector('#returnTotalBox .val').textContent = money(total);
+}
+function saveReturnProgress(){
+  const r = DB.rentals.find(x=>x.id===currentReturnRentalId);
+  let anyEntered = false;
+
+  r.lineItems.forEach((li,idx)=>{
+    const resolved = (li.returnedQty||0)+(li.damagedQty||0)+(li.missingQty||0);
+    const linePending = Math.max(0, li.qty - resolved);
+    if(linePending<=0) return;
+    const okEl = document.getElementById('ret-ok-'+idx);
+    const dmgEl = document.getElementById('ret-dmg-'+idx);
+    const missEl = document.getElementById('ret-miss-'+idx);
+    if(!okEl) return;
+    let ok = parseInt(okEl.value)||0;
+    let dmg = parseInt(dmgEl.value)||0;
+    let miss = parseInt(missEl.value)||0;
+    let sum = ok+dmg+miss;
+    if(sum>linePending){
+      // scale down proportionally / cap simply
+      const factor = linePending/sum;
+      ok = Math.floor(ok*factor); dmg = Math.floor(dmg*factor); miss = Math.floor(miss*factor);
+    }
+    if(ok+dmg+miss>0) anyEntered = true;
+    li.returnedQty = (li.returnedQty||0)+ok;
+    li.damagedQty = (li.damagedQty||0)+dmg;
+    li.missingQty = (li.missingQty||0)+miss;
+    if(dmg+miss>0){
+      const item = DB.items.find(it=>it.id===li.itemId);
+      if(item) item.lostQty = (item.lostQty||0)+dmg+miss;
+    }
+  });
+
+  r.daysUsed = parseFloat(document.getElementById('daysUsedInput').value) || r.daysBooked;
+  r.extraCharges = parseFloat(document.getElementById('extraChargeInput').value) || 0;
+
+  const pending = rentalPendingCount(r);
+  if(pending===0){
+    r.finalAmount = rentalEstimatedAmount(r);
+    r.status = 'completed';
+    r.paymentStatus = 'paid';
+    r.completedAt = new Date().toISOString();
+    saveDB();
+    toast('Rental completed — payment collected');
+    nav('active');
+  } else {
+    saveDB();
+    toast(anyEntered ? 'Partial return saved' : 'Updated');
+    renderReturnDetail();
+  }
+}
+function showPayQr(){
+  const r = DB.rentals.find(x=>x.id===currentReturnRentalId);
+  const days = parseFloat(document.getElementById('daysUsedInput')?.value) || r.daysUsed || r.daysBooked;
+  const extra = parseFloat(document.getElementById('extraChargeInput')?.value) || r.extraCharges || 0;
+  const dailyTotal = r.lineItems.reduce((s,li)=> s + li.qty*li.pricePerDay, 0);
+  const total = dailyTotal*days + extra;
+  const html = `
+    <div class="modal-header">
+      <h3>Pay Now</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div style="text-align:center;">
+      <div style="font-weight:800; font-size:16px; margin-bottom:4px;">K.P.M Store</div>
+      <div style="font-size:13px; color:var(--muted); margin-bottom:14px;">Amount to Pay</div>
+      <div style="font-size:28px; font-weight:800; margin-bottom:16px;">${money(total)}</div>
+      <img src="${DB.settings.qrImage}" class="qr-preview">
+    </div>
+  `;
+  openModal(html, true);
+}
+
+/* =========================================================
+   HISTORY
+========================================================= */
+function renderHistory(){
+  const q = (document.getElementById('historySearch').value||'').toLowerCase();
+  let list = DB.rentals.filter(r=>r.status==='completed');
+  if(q){
+    list = list.filter(r =>
+      r.customerName.toLowerCase().includes(q) ||
+      r.mobile.includes(q) ||
+      String(r.billNo).includes(q) ||
+      (r.completedAt && fmtDate(r.completedAt).toLowerCase().includes(q))
+    );
+  }
+  list.sort((a,b)=> new Date(b.completedAt) - new Date(a.completedAt));
+  const el = document.getElementById('historyList');
+  if(list.length===0){
+    el.innerHTML = emptyState('📜','No history yet', q?'No results found':'Completed rentals will appear here');
+    return;
+  }
+  el.innerHTML = list.map(r=>{
+    const itemsLine = r.lineItems.map(li=>`${li.itemName} ×${li.qty}`).join(', ');
+    return `
+      <div class="rental-card" onclick="openHistoryDetail('${r.id}')">
+        <div class="top-row">
+          <div>
+            <div class="cust">${escapeHtml(r.customerName)}</div>
+            <div class="phone">${escapeHtml(r.mobile)}</div>
+          </div>
+          <span class="badge done">Completed</span>
+        </div>
+        <div class="items-line">${escapeHtml(itemsLine)}</div>
+        <div class="meta">Closed: ${fmtDate(r.completedAt)}</div>
+        <div class="bottom-row">
+          <span style="font-size:12px;color:var(--muted);">Bill #${r.billNo}</span>
+          <span class="amt num">${money(r.finalAmount)}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+function openHistoryDetail(id){
+  currentHistoryId = id;
+  nav('history-detail');
+}
+function renderHistoryDetail(){
+  const r = DB.rentals.find(x=>x.id===currentHistoryId);
+  const el = document.getElementById('historyDetail');
+  if(!r){ el.innerHTML=''; return; }
+  el.innerHTML = `
+    <div class="card">
+      <h3>${escapeHtml(r.customerName)}</h3>
+      <div style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">${escapeHtml(r.mobile)} ${r.address?(' • '+escapeHtml(r.address)):''}</div>
+      <div class="divider"></div>
+      <div style="font-size:12.5px; color:var(--ink-soft); line-height:1.8;">
+        Bill #${r.billNo}<br>
+        Given: ${fmtDateTime(r.rentalDate)}<br>
+        Expected Return: ${fmtDateTime(r.expectedReturnDate)}<br>
+        Closed: ${fmtDateTime(r.completedAt)}<br>
+        Days Used: ${r.daysUsed} (booked ${r.daysBooked})<br>
+        ${r.notes?('Notes: '+escapeHtml(r.notes)+'<br>'):''}
+      </div>
+    </div>
+    <div class="section-label">Items</div>
+    <div class="card">
+      ${r.lineItems.map(li=>`
+        <div class="line-item-row">
+          <div>
+            <div class="nm">${escapeHtml(li.itemName)}</div>
+            <div class="sub">Qty ${li.qty} × ${money(li.pricePerDay)}/day ${li.damagedQty?(' · Damaged '+li.damagedQty):''} ${li.missingQty?(' · Missing '+li.missingQty):''}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="total-box">
+      <div class="lbl">FINAL AMOUNT COLLECTED</div>
+      <div class="val num">${money(r.finalAmount)}</div>
+      ${r.extraCharges?`<div class="sub">Includes ${money(r.extraCharges)} damage/missing charge</div>`:''}
+    </div>
+  `;
+}
+
+/* =========================================================
+   REPORTS
+========================================================= */
+function renderReports(){
+  const completed = DB.rentals.filter(r=>r.status==='completed');
+  const active = DB.rentals.filter(r=>r.status==='active');
+  const todayStr = new Date().toDateString();
+  const todaysIncome = completed.filter(r=> new Date(r.completedAt).toDateString()===todayStr)
+    .reduce((s,r)=>s+r.finalAmount,0);
+  const now = new Date();
+  const monthIncome = completed.filter(r=>{
+    const d = new Date(r.completedAt);
+    return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
+  }).reduce((s,r)=>s+r.finalAmount,0);
+  const pendingAmount = active.reduce((s,r)=>s+rentalEstimatedAmount(r),0);
+
+  // most rented items
+  const itemCounts = {};
+  DB.rentals.forEach(r=>{
+    r.lineItems.forEach(li=>{
+      itemCounts[li.itemName] = (itemCounts[li.itemName]||0) + li.qty;
+    });
+  });
+  const topItems = Object.entries(itemCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+
+  document.getElementById('reportsContent').innerHTML = `
+    <div class="stat-row">
+      <div class="stat"><div class="n num">${money(todaysIncome)}</div><div class="l">Today's Income</div></div>
+      <div class="stat"><div class="n num">${money(monthIncome)}</div><div class="l">This Month's Income</div></div>
+    </div>
+    <div class="stat-row">
+      <div class="stat warn"><div class="n num">${money(pendingAmount)}</div><div class="l">Pending (Active) Amount</div></div>
+      <div class="stat"><div class="n num">${completed.length}</div><div class="l">Total Completed Rentals</div></div>
+    </div>
+
+    <div class="section-label">Most Rented Items</div>
+    <div class="card">
+      ${topItems.length===0? '<p style="color:var(--muted); font-size:13px;">No rentals yet</p>' :
+        topItems.map(([name,qty])=>`<div class="report-row"><span class="l">${escapeHtml(name)}</span><span class="v num">${qty} units</span></div>`).join('')}
+    </div>
+
+    <div class="section-label">Summary</div>
+    <div class="card">
+      <div class="report-row"><span class="l">Active Rentals</span><span class="v num">${active.length}</span></div>
+      <div class="report-row"><span class="l">Overdue Rentals</span><span class="v num">${active.filter(isOverdue).length}</span></div>
+      <div class="report-row"><span class="l">Completed Rentals</span><span class="v num">${completed.length}</span></div>
+      <div class="report-row"><span class="l">Total Items in Catalog</span><span class="v num">${DB.items.length}</span></div>
+    </div>
+
+    <div class="section-label">Export</div>
+    <div class="card">
+      <button class="btn btn-outline btn-block" style="margin-bottom:10px;" onclick="exportHistoryCsv()">📄 Download Rental History CSV</button>
+      <button class="btn btn-outline btn-block" onclick="exportItemsCsv()">📄 Download Item-wise Report CSV</button>
+    </div>
+  `;
+}
+
+/* =========================================================
+   SETTINGS / QR / BACKUP / CSV
+========================================================= */
+function renderSettings(){
+  const img = document.getElementById('qrPreviewImg');
+  if(DB.settings.qrImage){
+    img.src = DB.settings.qrImage;
+    img.style.display='block';
+  } else {
+    img.style.display='none';
+  }
+}
+function handleQrUpload(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  resizeImageFile(file, 500, (dataUrl)=>{
+    DB.settings.qrImage = dataUrl;
+    saveDB();
+    renderSettings();
+    toast('QR code saved');
+  });
+}
+function downloadBackup(){
+  const blob = new Blob([JSON.stringify(DB, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const dateStr = new Date().toISOString().slice(0,10);
+  a.href = url; a.download = `kpm-store-backup-${dateStr}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Backup downloaded');
+}
+function handleRestoreUpload(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(evt){
+    try{
+      const data = JSON.parse(evt.target.result);
+      if(!data.items || !data.rentals){ alert('This file does not look like a valid K.P.M Store backup.'); return; }
+      if(!confirm('This will replace all current data with the backup. Continue?')) return;
+      DB = data;
+      if(!DB.settings) DB.settings = {qrImage:null};
+      if(!DB.billCounter) DB.billCounter = 1000;
+      saveDB();
+      toast('Backup restored');
+      nav('dashboard', false);
+    }catch(err){
+      alert('Could not read this backup file.');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+function confirmClearData(){
+  if(!confirm('This will permanently erase ALL items, rentals and history from this device. This cannot be undone. Continue?')) return;
+  if(!confirm('Are you absolutely sure? Consider downloading a backup first.')) return;
+  DB = defaultData();
+  saveDB();
+  toast('All data erased');
+  nav('dashboard', false);
+}
+function csvEscape(v){
+  v = String(v==null?'':v);
+  if(/[",\n]/.test(v)) v = '"' + v.replace(/"/g,'""') + '"';
+  return v;
+}
+function downloadCsv(filename, rows){
+  const content = rows.map(row=>row.map(csvEscape).join(',')).join('\n');
+  const blob = new Blob([content], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function exportHistoryCsv(){
+  const rows = [['Bill No','Customer','Mobile','Address','Rental Date','Expected Return','Completed','Days Used','Items','Final Amount','Extra Charges']];
+  DB.rentals.filter(r=>r.status==='completed').forEach(r=>{
+    rows.push([
+      r.billNo, r.customerName, r.mobile, r.address||'',
+      fmtDateTime(r.rentalDate), fmtDateTime(r.expectedReturnDate), fmtDateTime(r.completedAt),
+      r.daysUsed, r.lineItems.map(li=>`${li.itemName} x${li.qty}`).join('; '),
+      r.finalAmount, r.extraCharges||0
+    ]);
+  });
+  downloadCsv('kpm-store-rental-history.csv', rows);
+  toast('CSV downloaded');
+}
+function exportItemsCsv(){
+  const rows = [['Item','Total Qty','Currently Rented','Available','Lost (Damaged/Missing)','Price/Day']];
+  DB.items.forEach(item=>{
+    rows.push([item.name, item.totalQty, outstandingQtyForItem(item.id), availableQty(item), item.lostQty||0, item.pricePerDay]);
+  });
+  downloadCsv('kpm-store-items-report.csv', rows);
+  toast('CSV downloaded');
+}
+
+/* =========================================================
+   MODAL
+========================================================= */
+function openModal(html, center=false){
+  const root = document.getElementById('modalRoot');
+  root.innerHTML = `<div class="modal-backdrop ${center?'center':''}" id="modalBackdrop" onclick="if(event.target===this)closeModal()"><div class="modal-sheet">${html}</div></div>`;
+}
+function closeModal(){
+  document.getElementById('modalRoot').innerHTML = '';
+}
+
+/* =========================================================
+   INIT
+========================================================= */
+loadDB();
+nav('dashboard', false);
+navStack = ['dashboard'];
+</script>
+</body>
+</html>
